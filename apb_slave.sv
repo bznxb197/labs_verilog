@@ -1,9 +1,10 @@
 `timescale 1ns/1ps
 
-// APB slave с регистром по смещению 0x0.
+// APB slave с четырьмя регистрами (смещения 0x0, 0x4, 0x8, 0xC).
 // Регистр 0x0 (register_with_some_name) работает по правилу ЛР:
 //   запись с pwdata[0] = 0 -> в регистре хранится 32'hAAAA_AAAA,
 //   запись с pwdata[0] = 1 -> в регистре хранится 32'h5555_5555.
+// Регистры 0x4, 0x8, 0xC хранят записанное значение как есть.
 // Обращение по другому смещению -> pslverr = 1.
 // О каждой операции слейв печатает сообщение в консоль симулятора.
 module apb_slave
@@ -24,6 +25,9 @@ module apb_slave
     localparam logic [31:0] VAL_BIT0_IS_1 = 32'h5555_5555;
 
     logic [31:0] register_with_some_name; // смещение 0x0
+    logic [31:0] reg_date;                // смещение 0x4
+    logic [31:0] reg_surname;             // смещение 0x8
+    logic [31:0] reg_name;                // смещение 0xC
 
     // Состояния автомата APB
     typedef enum logic [1:0] {
@@ -41,6 +45,9 @@ module apb_slave
             pslverr                 <= 1'b0;
             pready                  <= 1'b0;
             register_with_some_name <= '0;
+            reg_date                <= '0;
+            reg_surname             <= '0;
+            reg_name                <= '0;
             apb_st                  <= APB_SETUP;
         end
         else
@@ -75,6 +82,20 @@ module apb_slave
                                          $time, paddr, pwdata, pwdata[0],
                                          pwdata[0] ? VAL_BIT0_IS_1 : VAL_BIT0_IS_0);
                             end
+                            8'h4: begin
+                                reg_date <= pwdata;
+                                $display("[%0t] SLAVE: WRITE 0x%h <= 0x%h (date)", $time, paddr, pwdata);
+                            end
+                            8'h8: begin
+                                reg_surname <= pwdata;
+                                $display("[%0t] SLAVE: WRITE 0x%h <= 0x%h (surname, \"%s\")",
+                                         $time, paddr, pwdata, pwdata);
+                            end
+                            8'hC: begin
+                                reg_name <= pwdata;
+                                $display("[%0t] SLAVE: WRITE 0x%h <= 0x%h (name, \"%s\")",
+                                         $time, paddr, pwdata, pwdata);
+                            end
                             default: begin
                                 pslverr <= 1'b1;
                                 $display("[%0t] SLAVE: WRITE 0x%h <= 0x%h -> ERROR: no register at this offset",
@@ -94,6 +115,18 @@ module apb_slave
                             8'h0: begin
                                 prdata <= register_with_some_name;
                                 $display("[%0t] SLAVE: READ  0x%h -> 0x%h", $time, paddr, register_with_some_name);
+                            end
+                            8'h4: begin
+                                prdata <= reg_date;
+                                $display("[%0t] SLAVE: READ  0x%h -> 0x%h", $time, paddr, reg_date);
+                            end
+                            8'h8: begin
+                                prdata <= reg_surname;
+                                $display("[%0t] SLAVE: READ  0x%h -> 0x%h", $time, paddr, reg_surname);
+                            end
+                            8'hC: begin
+                                prdata <= reg_name;
+                                $display("[%0t] SLAVE: READ  0x%h -> 0x%h", $time, paddr, reg_name);
                             end
                             default: begin
                                 pslverr <= 1'b1;

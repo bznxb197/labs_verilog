@@ -6,6 +6,11 @@ module tb_top;
 
     parameter logic [31:0] P_DEVICE_OFFSET = 32'h7000_0000;
 
+    // Данные студента (п.9)
+    localparam logic [31:0] LIST_NUMBER = 32'd17;          // TODO: номер в списке группы
+    localparam logic [31:0] DATE_BCD    = 32'h2910_2026;  // 29.10.2026 -> дд.мм.гггг в BCD
+    localparam logic [31:0] SURNAME     = "Cher";         // первые 4 буквы фамилии (Chernykh)
+    localparam logic [31:0] NAME        = "Alex";         // первые 4 буквы имени
 
     localparam logic [31:0] VAL_BIT0_IS_0 = 32'hAAAA_AAAA;
     localparam logic [31:0] VAL_BIT0_IS_1 = 32'h5555_5555;
@@ -81,6 +86,12 @@ module tb_top;
         write_and_check("0x0, bit0=0", 32'h0, 32'h1234_5678, VAL_BIT0_IS_0);
         write_and_check("0x0, bit0=1", 32'h0, 32'h0000_0001, VAL_BIT0_IS_1);
 
+        $display("\n=== п.9: данные студента ===");
+        write_and_check("0x0, номер в списке", 32'h0, LIST_NUMBER,
+                        LIST_NUMBER[0] ? VAL_BIT0_IS_1 : VAL_BIT0_IS_0);
+        write_and_check("0x4, дата",           32'h4, DATE_BCD, DATE_BCD);
+        write_and_check("0x8, фамилия",        32'h8, SURNAME,  SURNAME);
+        write_and_check("0xC, имя",            32'hC, NAME,     NAME);
 
         $display("\n=== Неверный адрес ===");
         master.apb_write(P_DEVICE_OFFSET + 32'h10, 32'hDEAD_BEEF);
